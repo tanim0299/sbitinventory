@@ -22,4 +22,10 @@ return [
 
     "action" => "Action",
     "sl" => "SL",
+
+    "index_title"=> "Customer Information",
+
+    "customer_details"=> "Customer Details",
+    "type"=> "Customer Type",
+    "customer_id"=> "Customer ID",
 ];

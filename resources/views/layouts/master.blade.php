@@ -15,6 +15,22 @@
     <!-- App favicon -->
     <link rel="shortcut icon" href="{{ asset('assets/images/favicon.ico') }}">
 
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<style>
+    .select2-container--default .select2-selection--single{
+        border: 1px solid lightgray !important;
+        border-radius: 0px !important;
+    }
+    table tr th{
+        padding : 5px 7px !important;
+    }
+    .bg-dark{
+        background: #313a46 !important;
+    }
+</style>
+
 
 
     @include('layouts.header_scripts')
@@ -23,9 +39,14 @@
 
 </head>
 
+@if(request()->path() === 'purchase/create' || request()->path() === 'sales/create')
 <body class="loading"
-    data-layout-config='{"leftSideBarTheme":"dark","layoutBoxed":false, "leftSidebarCondensed":false, "leftSidebarScrollable":false,"darkMode":false, "showRightSidebarOnStart": false}'>
-    <!-- Begin page -->
+data-layout-config='{"leftSideBarTheme":"dark","layoutBoxed":false, "leftSidebarCondensed":true, "leftSidebarScrollable":false,"darkMode":false, "showRightSidebarOnStart": false}'>
+@else
+<body class="loading"
+data-layout-config='{"leftSideBarTheme":"dark","layoutBoxed":false, "leftSidebarCondensed":false, "leftSidebarScrollable":false,"darkMode":false, "showRightSidebarOnStart": false}'>
+
+@endif
     <div class="wrapper">
 
         @include('layouts.left_sidebar')
@@ -203,7 +224,7 @@
     </div><!-- /.modal -->
 
     <script>
-        
+
         //profile_image preview
         function preview_profile_image(input){
             let file = $("#profile_image").get(0).files[0];
@@ -219,6 +240,14 @@
         }
 
     </script>
+
+
+
+<script>
+    $(document).ready(function() {
+    $('.js-example-basic-single').select2();
+});
+</script>
 
     @include('layouts.right_sidebar')
 

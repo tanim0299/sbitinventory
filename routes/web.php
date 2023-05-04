@@ -12,6 +12,17 @@ use App\Http\Controllers\UserController;
 
 use App\Http\Controllers\SoftwaresettingControllers;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\ItemController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\BrandController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\MeasurementController;
+use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\MeasurementSubUnit;
+use App\Http\Controllers\WebsiteInfoController;
+use App\Http\Controllers\StockController;
+use App\Http\Controllers\SalesController;
 
 
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +38,10 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+
+Route::get('/',function(){
+    return view('welcome');
+});
 
 
 
@@ -103,6 +118,7 @@ Route::group(['middleware' => 'auth'], function () {
         'team' => TeamController::class,
         'messages' => MessageController::class,
         'vedio_gallery' => VedioGallery::class,
+        'website_info' => WebsiteInfoController::class,
     ]);
 
     Route::get('retrive_message/{id}', [MessageController::class, 'retrive_message']);
@@ -163,6 +179,81 @@ Route::group(['middleware' => 'auth'], function () {
     Route::resources([
         'company'=>SoftwaresettingControllers::class,
         'customer'=>CustomerController::class,
+        'supplier'=>SupplierController::class,
+        'item'=>ItemController::class,
+        'category'=>CategoryController::class,
+        'brand'=>BrandController::class,
+        'product'=>ProductController::class,
+        'measurement'=>MeasurementController::class,
+        'purchase'=>PurchaseController::class,
+        'measurement_subunit'=>MeasurementSubUnit::class,
+        'stock'=>StockController::class,
+        'sales'=>SalesController::class,
     ]);
 
+
+    Route::get('retrive_customer/{id}',[CustomerController::class,'retrive_customer']);
+    Route::get('customerper_delete/{id}',[CustomerController::class,'customerper_delete']);
+
+    Route::get('retrive_supplier/{id}',[SupplierController::class,'retrive_supplier']);
+    Route::get('supplierper_delete/{id}',[SupplierController::class,'supplierper_delete']);
+
+
+    Route::post('changeItemStatus',[ItemController::class,'changeItemStatus']);
+    Route::get('retrive_item/{id}',[ItemController::class,'retrive_item']);
+    Route::get('itemper_delete/{id}',[ItemController::class,'itemper_delete']);
+
+
+    Route::post('changeCatStatus',[CategoryController::class,'changeCatStatus']);
+    Route::get('retrive_category/{id}',[CategoryController::class,'retrive_category']);
+    Route::get('catper_delete/{id}',[CategoryController::class,'catper_delete']);
+
+
+    Route::post('changeBrandStatus',[BrandController::class,'changeBrandStatus']);
+
+    Route::get('retrive_brand/{id}',[BrandController::class,'retrive_brand']);
+    Route::get('brandper_delete/{id}',[BrandController::class,'brandper_delete']);
+
+
+
+    Route::get('retrive_measurement/{id}',[MeasurementController::class,'retrive_measurement']);
+    Route::get('measurementper_delete/{id}',[MeasurementController::class,'measurementper_delete']);
+
+
+    Route::get('retrive_subunit/{id}',[MeasurementSubUnit::class,'retrive_subunit']);
+    Route::get('subunit_per_delete/{id}',[MeasurementSubUnit::class,'subunit_per_delete']);
+
+    Route::get('/getcatajax/{id}', [ProductController::class, 'getcatajax']);
+    Route::post('/changeProductStatus', [ProductController::class, 'changeProductStatus']);
+    Route::get('/retrive_product/{id}', [ProductController::class, 'retrive_product']);
+    Route::get('/product_per_delete/{id}', [ProductController::class, 'product_per_delete']);
+
+
+    Route::get('/getSupplierCompany/{supplier_id}', [PurchaseController::class, 'getSupplierCompany']);
+    Route::get('/purchaseproductcart/{pdt_id}', [PurchaseController::class, 'purchaseproductcart']);
+    Route::get('/showpurchaseproductcart', [PurchaseController::class, 'showpurchaseproductcart']);
+    Route::post('/qtyupdate/{id}', [PurchaseController::class, 'qtyupdate']);
+    Route::post('/purchasepriceupdate/{id}', [PurchaseController::class, 'purchasepriceupdate']);
+    Route::post('/purchasepricedicount/{id}', [PurchaseController::class, 'purchasepricedicount']);
+    Route::post('/purchasecost/{id}', [PurchaseController::class, 'purchasecost']);
+    Route::post('/salepriceupdate/{id}', [PurchaseController::class, 'salepriceupdate']);
+    Route::post('/submeasurmentupdate/{id}', [PurchaseController::class, 'submeasurmentupdate']);
+    Route::get('/deletepurchasecartproduct/{id}', [PurchaseController::class, 'deletepurchasecartproduct']);
+    Route::post('/purchaseledger', [PurchaseController::class, 'purchaseledger']);
+    Route::get('/invoicepurchase/{id}', [PurchaseController::class, 'invoice_purchase']);
+    Route::get('/retrive_purchase_ledger/{id}', [PurchaseController::class, 'retrive_purchase_ledger']);
+    Route::get('/deleteper_purchaseledger/{id}', [PurchaseController::class, 'deleteper_purchaseledger']);
+    Route::post('/purcahseoriginalmeasurement/{id}', [PurchaseController::class, 'purcahseoriginalmeasurement']);
+
+
+    Route::get('/salesproductcart/{id}', [SalesController::class, 'salesproductcart']);
+    Route::get('/showsalesproductcart', [SalesController::class, 'showsalesproductcart']);
+    Route::post('/qtyupdatesales/{id}', [SalesController::class, 'qtyupdatesales']);
+    Route::post('/salessubmeasurmentupdate/{id}', [SalesController::class, 'salessubmeasurmentupdate']);
+    Route::get('/salepriceupdatesingle/{id}', [SalesController::class, 'salepriceupdatesingle']);
+    Route::post('/product_discount_amount/{id}', [SalesController::class, 'product_discount_amount']);
+    Route::get('/deletesalescartproduct/{id}', [SalesController::class, 'deletesalescartproduct']);
+    Route::post('/salesOriginalMeasurement/{id}', [SalesController::class, 'salesOriginalMeasurement']);
+    Route::post('/salesledger', [SalesController::class, 'salesledger']);
+    Route::get('/sales_invoice/{id}', [SalesController::class, 'sales_invoice']);
 });
