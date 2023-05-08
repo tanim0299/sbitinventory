@@ -23,13 +23,13 @@ class ProductBrandsTableSeeder extends Seeder
             array (
                 'brand_admin_id' => '1',
                 'brand_id' => 'BRN-000001',
-                'brand_name_bn' => 'এসার',
-                'brand_name_en' => 'Acer',
+                'brand_name_bn' => NULL,
+                'brand_name_en' => 'SBIT',
                 'brand_status' => '1',
-                'created_at' => '2023-05-01 05:10:19',
+                'created_at' => '2023-05-08 12:27:47',
                 'deleted_at' => NULL,
-                'id' => 1,
-                'updated_at' => '2023-05-01 05:17:55',
+                'id' => 3,
+                'updated_at' => '2023-05-08 12:27:47',
             ),
         ));
         

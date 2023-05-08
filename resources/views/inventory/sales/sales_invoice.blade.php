@@ -62,7 +62,7 @@
 			<tr>
 				<td colspan="2" style=" padding:5px; text-align: center; font-size: 28px; font-weight: bold;  ">
 
-						{{-- {!! DNS1D::getBarcodeSVG($data->invoice_no, 'C39',0.9,40,'#414141') !!} --}}
+						{!! DNS1D::getBarcodeSVG($data->invoice_no, 'C39',0.9,40,'#414141') !!}
 
 </td>
 			</tr>

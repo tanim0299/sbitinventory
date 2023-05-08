@@ -39,7 +39,17 @@
 
 </head>
 
-@if(request()->path() === 'purchase/create' || request()->path() === 'sales/create')
+@php
+
+    $path = request()->path();
+
+    $explode = explode('/',$path);
+
+
+
+@endphp
+
+@if(request()->path() === 'purchase/create' || request()->path() === 'sales/create' || $explode[0] === 'sales_return')
 <body class="loading"
 data-layout-config='{"leftSideBarTheme":"dark","layoutBoxed":false, "leftSidebarCondensed":true, "leftSidebarScrollable":false,"darkMode":false, "showRightSidebarOnStart": false}'>
 @else
@@ -76,7 +86,7 @@ data-layout-config='{"leftSideBarTheme":"dark","layoutBoxed":false, "leftSidebar
                         </div>
                         <div class="col-md-6">
                             <div class="text-md-end footer-links d-none d-md-block">
-                                <a href="javascript: void(0);">About</a>
+                                <a href="javascript: void(0);">About Us</a>
                                 <a href="javascript: void(0);">Support</a>
                                 <a href="javascript: void(0);">Contact Us</a>
                             </div>

@@ -34,5 +34,20 @@ class DatabaseSeeder extends Seeder
         $this->call(ProductMeasurementsTableSeeder::class);
         $this->call(MeasurementSubunitsTableSeeder::class);
         $this->call(ProductInformationsTableSeeder::class);
+        $this->call(CurrentPurchasesTableSeeder::class);
+        $this->call(CurrentSalesTableSeeder::class);
+        $this->call(CurrentSalesReturnsTableSeeder::class);
+        $this->call(MigrationsTableSeeder::class);
+        $this->call(PasswordResetsTableSeeder::class);
+        $this->call(PasswordResetTokensTableSeeder::class);
+        $this->call(PersonalAccessTokensTableSeeder::class);
+        $this->call(PurchaseEntriesTableSeeder::class);
+        $this->call(PurchaseLedgersTableSeeder::class);
+        $this->call(SalesEntriesTableSeeder::class);
+        $this->call(SalesLedgersTableSeeder::class);
+        $this->call(SalesPaymentsTableSeeder::class);
+        $this->call(StocksTableSeeder::class);
+        $this->call(SupplierPaymentsTableSeeder::class);
+        $this->call(WebsiteInfosTableSeeder::class);
     }
 }

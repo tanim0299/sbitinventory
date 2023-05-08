@@ -256,4 +256,13 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/salesOriginalMeasurement/{id}', [SalesController::class, 'salesOriginalMeasurement']);
     Route::post('/salesledger', [SalesController::class, 'salesledger']);
     Route::get('/sales_invoice/{id}', [SalesController::class, 'sales_invoice']);
+
+    Route::get('/retrive_sales_ledger/{id}', [SalesController::class, 'retrive_sales_ledger']);
+    Route::get('/deleteper_salesledger/{id}', [SalesController::class, 'deleteper_salesledger']);
+    Route::get('/sales_return/{id}', [SalesController::class, 'sales_return']);
+
+    Route::post('/load_current_salesreturn', [SalesController::class, 'load_current_salesreturn']);
+    Route::get('/delete_current_sales_return/{id}', [SalesController::class, 'delete_current_sales_return']);
+    Route::post('/current_sales_returnqty_update/{id}', [SalesController::class, 'current_sales_returnqty_update']);
+    Route::post('/sales_return_submit', [SalesController::class, 'sales_return_submit']);
 });

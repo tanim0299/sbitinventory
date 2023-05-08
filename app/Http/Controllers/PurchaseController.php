@@ -49,7 +49,7 @@ class PurchaseController extends Controller
 
                         $subtotal = $p->product_quantity * $totalcost;
 
-                        $output .=  '<b>'.$p->pdt_name_en.'</b> ('.$p->product_quantity.' '.$p->sub_unit_name.' X '.$totalcost.') = '.$subtotal;
+                        $output .=  '<b>'.$p->pdt_name_en.'</b> ('.$p->product_quantity.' '.$p->sub_unit_name.' X '.$totalcost.' tk) = '.$subtotal.' tk';
                         $output.= '<br>';
                     }
                 }
@@ -71,11 +71,11 @@ class PurchaseController extends Controller
 
                 $grandtotal = $total - $row->discount;
 
-                return 'Total : '.$total.'<br>
-                        Discount: '.$row->discount.'<br>
-                        Grand Total: '.$grandtotal.'<br>
-                        <span class="badge bg-success">Paid : '.$supplier_payment.'</span><br>
-                        <span class="badge bg-danger">Due : '.$grandtotal - $supplier_payment.'</span><br>';
+                return 'Total : '.$total.' tk<br>
+                        Discount: '.$row->discount.' tk<br>
+                        Grand Total: '.$grandtotal.' tk<br>
+                        <span class="badge bg-success">Paid : '.$supplier_payment.' tk</span><br>
+                        <span class="badge bg-danger">Due : '.$grandtotal - $supplier_payment.' tk</span><br>';
             })
             ->addColumn('action', function($row){
                 $btn = '<div class="dropdown">
@@ -148,6 +148,19 @@ class PurchaseController extends Controller
      */
     public function destroy(string $id)
     {
+        $chkq = purchase_entry::where('invoice_no',$id)->get();
+        if($chkq)
+        {
+            foreach($chkq as $v)
+            {
+                $total_stock = stock::where('product_id',$v->product_id)->first();
+                $updated_quantity = $total_stock->quantity - $v->product_quantity;
+                // return $updated_quantity;
+                stock::where('product_id',$v->product_id)->update([
+                    'quantity'=> $updated_quantity,
+                ]);
+            }
+        }
         purchase_ledger::where('invoice_no',$id)->delete();
         purchase_entry::where('invoice_no',$id)->delete();
         supplier_payment::where('invoice_no',$id)->delete();
@@ -403,6 +416,19 @@ class PurchaseController extends Controller
 
     public function retrive_purchase_ledger($id)
     {
+        $chkq = purchase_entry::withTrashed()->where('invoice_no',$id)->get();
+        if($chkq)
+        {
+            foreach($chkq as $v)
+            {
+                $total_stock = stock::where('product_id',$v->product_id)->first();
+                $updated_quantity = $total_stock->quantity + $v->product_quantity;
+                // return $updated_quantity;
+                stock::where('product_id',$v->product_id)->update([
+                    'quantity'=> $updated_quantity,
+                ]);
+            }
+        }
         purchase_ledger::where('invoice_no',$id)->restore();
         purchase_entry::where('invoice_no',$id)->restore();
         supplier_payment::where('invoice_no',$id)->restore();

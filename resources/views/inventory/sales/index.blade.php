@@ -12,7 +12,7 @@
 
     @component('components.breadcrumb')
         @slot('title')
-            @lang('customer.index_title')
+            @lang('sales.index_title')
         @endslot
         @slot('breadcrumb1')
             @lang('common.dashboard')
@@ -25,7 +25,7 @@
                 @lang('common.add_new')
             @endslot
             @slot('action_button1_link')
-                {{ route('customer.create') }}
+                {{ route('sales.create') }}
             @endslot
         @endif
         @slot('action_button1_class')
@@ -38,7 +38,7 @@
             <div class="card">
                 <div class="card-body">
 
-                    <h4 class="header-title">@lang('customer.index_title')</h4>
+                    <h4 class="header-title">@lang('sales.index_title')</h4>
                     <ul class="nav nav-tabs nav-bordered mb-3">
                         <li class="nav-item">
                             <a href="#roles-tab-all" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
@@ -56,10 +56,11 @@
                             <table id="datatable-roles-all" class="table table-striped dt-responsive nowrap w-100">
                                 <thead>
                                     <tr>
-                                        <th>@lang('customer.customer_id')</th>
-                                        <th>@lang('customer.customer_details')</th>
-                                        <th>@lang('customer.address')</th>
-                                        <th>@lang('customer.accounts')</th>
+                                        <th>@lang('sales.invoice_date')</th>
+                                        <th>@lang('sales.invoice_no')</th>
+                                        <th>@lang('sales.customer_name')</th>
+                                        <th>@lang('sales.products')</th>
+                                        <th>@lang('sales.amount')</th>
                                         <th>@lang('common.action')</th>
                                     </tr>
                                 </thead>
@@ -67,18 +68,23 @@
                         </div> <!-- end all-->
 
                         @php
-                        use App\Models\customer_info;
-                        $onlyTrashed = customer_info::onlyTrashed()->get();
+                        use App\Models\sales_ledger;
+                        use App\Models\sales_entry;
+                        use App\Models\sales_payment;
+                        $onlyTrashed = sales_ledger::onlyTrashed()->leftjoin('customer_infos','customer_infos.customer_id','sales_ledgers.customer_id')
+                                        ->select('sales_ledgers.*','customer_infos.customer_name_en','customer_infos.customer_phone')
+                                        ->get();
                         @endphp
 
                         <div class="tab-pane" id="roles-tab-deleted">
                             <table id="datatable-roles-deleted" class="table table-striped dt-responsive nowrap w-100">
                                 <thead>
                                     <tr>
-                                        <th>@lang('customer.customer_id')</th>
-                                        <th>@lang('customer.customer_details')</th>
-                                        <th>@lang('customer.address')</th>
-                                        <th>@lang('customer.type')</th>
+                                        <th>@lang('sales.invoice_date')</th>
+                                        <th>@lang('sales.invoice_no')</th>
+                                        <th>@lang('sales.customer_name')</th>
+                                        <th>@lang('sales.products')</th>
+                                        <th>@lang('sales.amount')</th>
                                         <th>@lang('common.action')</th>
                                     </tr>
                                 </thead>
@@ -86,31 +92,65 @@
                                     @if($onlyTrashed)
                                     @foreach ($onlyTrashed as $v)
                                     <tr>
-                                        <td>{{$v->customer_id}}</td>
+                                        <td>{{$v->invoice_date}}</td>
+                                        <td>{{$v->invoice_no}}</td>
                                         <td>
-                                            <b>{{$v->customer_name_en}}</b><br>
-                                            <span>{{$v->customer_phone}}</span><br>
-                                            <span>{{$v->customer_email}}</span>
+                                            {{$v->customer_name_en}}<br>{{$v->customer_phone}}
                                         </td>
                                         <td>
-                                            @if($v->type == 1)
+                                            @php
+                                            $product = sales_entry::onlyTrashed()->where('invoice_no',$v->invoice_no)
+                                            ->leftjoin('product_informations','product_informations.pdt_id','sales_entries.product_id')
+                                            ->leftjoin('measurement_subunits','measurement_subunits.id','sales_entries.sub_unit_id')
+                                            ->select('sales_entries.*','product_informations.pdt_name_en','measurement_subunits.sub_unit_name')
+                                            ->get();
 
-                                                General Customer
+                                            $output = '';
 
-                                            @elseif($v->type == 2)
+                                            if($product)
+                                            {
+                                                foreach($product as $p)
+                                                {
+                                                    $totalcost = $p->product_sales_price - $p->product_discount_amount;
 
-                                                Retails Customer
+                                                    $subtotal = $p->product_quantity * $totalcost;
 
-                                            @else
+                                                    $output .=  '<b>'.$p->pdt_name_en.'</b> ('.$p->product_quantity.' '.$p->sub_unit_name.' X '.$totalcost.' tk) = '.$subtotal.' tk';
+                                                    $output.= '<br>';
+                                                }
+                                            }
+                                            @endphp
 
-                                                3rd Party Customer
-
-                                            @endif
+                                            {!! $output !!}
 
                                         </td>
                                         <td>
-                                            <a href="{{url('retrive_customer')}}/{{$v->customer_id}}" class="btn btn-warning btn-sm"><i class="fa fa-rotate-right"></i> Retrive</a>
-                                            <a onclick="return Confirm()" href="{{url('customerper_delete')}}/{{$v->customer_id}}" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i> Permenantly Delete</a>
+                                            @php
+                                           $sales_entry = sales_entry::onlyTrashed()->where('invoice_no',$v->invoice_no)->get();
+                                            $sales_payment = sales_payment::onlyTrashed()->where('invoice_no',$v->invoice_no)->sum('payment_amount');
+                                            $total = 0;
+                                            if($sales_entry)
+                                            {
+                                                foreach($sales_entry as $p)
+                                                {
+                                                    $totalcost = $p->product_sales_price  - $p->product_discount_amount;
+                                                    $total = ($total+($p->product_quantity * $totalcost));
+                                                }
+                                            }
+
+                                            $grandtotal = $total - $v->final_discount;
+
+                                            $output2 = 'Total : '.$total.' tk<br>
+                                                    Discount: '.$v->discount.' tk<br>
+                                                    Grand Total: '.$grandtotal.' tk<br>
+                                                    <span class="badge bg-success">Paid : '.$sales_payment.' tk</span><br>
+                                                    <span class="badge bg-danger">Due : '.$grandtotal - $sales_payment.' tk</span><br>';
+                                            @endphp
+                                            {!! $output2 !!}
+                                        </td>
+                                        <td>
+                                            <a href="{{url('retrive_sales_ledger')}}/{{$v->invoice_no}}" class="btn btn-warning btn-sm"><i class="fa fa-rotate-right"></i> Retrive</a>
+                                            <a onclick="return Confirm()" href="{{url('deleteper_salesledger')}}/{{$v->invoice_no}}" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i> Permenantly Delete</a>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -154,12 +194,13 @@
           var table = $('#datatable-roles-all').DataTable({
               processing: true,
               serverSide: true,
-              ajax: "{{ route('customer.index') }}",
+              ajax: "{{ route('sales.index') }}",
               columns: [
-                  {data: 'customer_id', name: 'customer_id'},
-                  {data: 'customer_details', name: 'customer_details'},
-                  {data: 'type', name: 'type'},
-                  {data: 'accounts', name: 'accounts'},
+                  {data: 'invoice_date', name: 'invoice_date'},
+                  {data: 'invoice_no', name: 'invoice_no'},
+                  {data: 'customer_info', name: 'customer_info'},
+                  {data: 'product_info', name: 'product_info'},
+                  {data: 'amount', name: 'amount'},
                   {data: 'action', name: 'action', orderable: false, searchable: false},
               ]
           });
@@ -179,6 +220,8 @@
             }
         }
       </script>
+
+
 
 
     @include('components.delete_script')

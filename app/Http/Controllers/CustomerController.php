@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Brian2694\Toastr\Facades\Toastr;
 use App\Models\customer_info;
 use App\Models\sales_payment;
+use App\Models\sales_ledger;
 use Haruncpi\LaravelIdGenerator\IdGenerator;
 use DataTables;
 
@@ -42,6 +43,24 @@ class CustomerController extends Controller
                     return '3rd Party Customer';
                 }
             })
+            ->addColumn('accounts',function($row){
+                $total_purchase = sales_ledger::where('customer_id',$row->customer_id)->sum('total');
+                $total_discount = sales_ledger::where('customer_id',$row->customer_id)->sum('final_discount');
+                $paid_amount = sales_ledger::where('customer_id',$row->customer_id)->sum('paid_amount');
+                $previous_due = sales_payment::where('customer_id',$row->customer_id)->sum('previous_due');
+                $return_amount = sales_payment::where('customer_id',$row->customer_id)->sum('return_amount');
+                $sales_payment = sales_payment::where('customer_id',$row->customer_id)->sum('payment_amount');
+                $return_paid = sales_payment::where('customer_id',$row->customer_id)->sum('returnpaid');
+
+
+                $grandtotal = $total_purchase - $total_discount;
+
+                $total = ($grandtotal - $paid_amount)  + $previous_due;
+
+                $subtotal = ($total - $return_amount) - $return_paid;
+
+                return '<span class="badge bg-danger">'.$subtotal.'</span>';
+            })
             ->addColumn('action', function($row){
                 $btn = '<div class="dropdown">
                     <a class="btn btn-secondary dropdown-toggle btn-sm" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -59,7 +78,7 @@ class CustomerController extends Controller
                 </div>';
                 return $btn;
             })
-            ->rawColumns(['action','type','customer_details'])
+            ->rawColumns(['action','type','customer_details','accounts'])
             ->make(true);
 
 
