@@ -23,33 +23,22 @@ class ProductMeasurementsTableSeeder extends Seeder
             array (
                 'created_at' => NULL,
                 'deleted_at' => NULL,
-                'id' => 1,
+                'id' => 5,
                 'measurement_admin_id' => '1',
                 'measurement_id' => 'MU-0000001',
                 'measurement_sl' => '1',
                 'measurement_unit' => 'KG',
-                'updated_at' => '2023-05-01 06:34:10',
+                'updated_at' => NULL,
             ),
             1 => 
             array (
                 'created_at' => NULL,
                 'deleted_at' => NULL,
-                'id' => 3,
+                'id' => 6,
                 'measurement_admin_id' => '1',
                 'measurement_id' => 'MU-0000002',
                 'measurement_sl' => '2',
-                'measurement_unit' => 'Dozen',
-                'updated_at' => NULL,
-            ),
-            2 => 
-            array (
-                'created_at' => NULL,
-                'deleted_at' => NULL,
-                'id' => 4,
-                'measurement_admin_id' => '1',
-                'measurement_id' => 'MU-0000003',
-                'measurement_sl' => '3',
-                'measurement_unit' => 'Meter',
+                'measurement_unit' => 'Liter',
                 'updated_at' => NULL,
             ),
         ));

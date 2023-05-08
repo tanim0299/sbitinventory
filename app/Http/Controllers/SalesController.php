@@ -14,6 +14,7 @@ use App\Models\measurement_subunit;
 use App\Models\sales_ledger;
 use App\Models\sales_entry;
 use App\Models\sales_payment;
+use App\Models\current_sales_return;
 use Auth;
 use Session;
 
@@ -22,9 +23,109 @@ class SalesController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        if ($request->ajax()) {
+            $data = sales_ledger::leftjoin('customer_infos','customer_infos.customer_id','sales_ledgers.customer_id')
+            ->select('sales_ledgers.*','customer_infos.customer_name_en','customer_infos.customer_phone')
+            ->get();
+            return Datatables::of($data)->addIndexColumn()
+            ->addColumn('customer_info',function($row){
+                return $row->customer_name_en.'<br>'.$row->customer_phone;
+            })
+            ->addColumn('product_info',function($row){
+                $product = sales_entry::where('invoice_no',$row->invoice_no)
+                ->leftjoin('product_informations','product_informations.pdt_id','sales_entries.product_id')
+                ->leftjoin('measurement_subunits','measurement_subunits.id','sales_entries.sub_unit_id')
+                ->select('sales_entries.*','product_informations.pdt_name_en','measurement_subunits.sub_unit_name')
+                ->get();
+
+                $output = '';
+
+                if($product)
+                {
+                    foreach($product as $p)
+                    {
+                        $totalcost = $p->product_sales_price - $p->product_discount_amount;
+
+                        $subtotal = $p->product_quantity * $totalcost;
+
+                        $returntotal = $p->return_quantity * $totalcost;
+
+
+
+                        $output .=  '<b>'.$p->pdt_name_en.'</b> ('.$p->product_quantity.' '.$p->sub_unit_name.' X '.$totalcost.' tk) = '.$subtotal.' tk';
+                        $output .='<br>';
+                        if($p->return_quantity >0)
+                        {
+
+                            $output.= '<br>
+                            Return : <br><b>'.$p->pdt_name_en.'</b> ('.$p->return_quantity.' '.$p->sub_unit_name.' X '.$totalcost.' tk) = '.$returntotal.' tk <br>';
+                        }
+                    }
+                }
+
+                return $output;
+            })
+            ->addColumn('amount',function($row){
+                $sales_entry = sales_entry::where('invoice_no',$row->invoice_no)->get();
+
+                $sales_payment = sales_payment::where('invoice_no',$row->invoice_no)->sum('payment_amount');
+
+                $sales_returnamount = sales_payment::where('invoice_no',$row->invoice_no)->sum('return_amount');
+
+                $sales_returnpayment = sales_payment::where('invoice_no',$row->invoice_no)->sum('returnpaid');
+
+
+                $total = 0;
+                if($sales_entry)
+                {
+                    foreach($sales_entry as $p)
+                    {
+                        $totalcost = $p->product_sales_price  - $p->product_discount_amount;
+                        $total = ($total+($p->product_quantity * $totalcost));
+                    }
+                }
+
+                $grandtotal = $total - $row->final_discount;
+
+
+                $total_transaction = ($grandtotal - $sales_payment) - $sales_returnamount;
+                $total_due = $total_transaction - $sales_returnpayment;
+
+
+
+                return 'Total : '.$total.' tk<br>
+                        Discount: '.$row->final_discount.' tk<br>
+                        Grand Total: '.$grandtotal.' tk<br>
+                        <span class="badge bg-success">Paid : '.$sales_payment.' tk</span><br>
+                        <span class="badge bg-warning">Return : '.$row->return_amount.' tk</span><br>
+                        <span class="badge bg-info">Return Paid : '.$sales_returnpayment.' tk</span><br>
+                        <span class="badge bg-danger">Due : '.$total_due.' tk</span><br>';
+            })
+            ->addColumn('action', function($row){
+                $btn = '<div class="dropdown">
+                    <a class="btn btn-secondary dropdown-toggle btn-sm" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Actions
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                        <a target="_blank" class="dropdown-item" href="'.url('sales_invoice/'.$row->invoice_no).'"><i class="fa fa-eye"></i> Show Invoice</a>
+                        <a target="" class="dropdown-item" href="'.url('sales_return/'.$row->invoice_no).'"><i class="fa fa-arrow-left"></i> Return</a>
+                        <form action="'.route('sales.destroy',$row->invoice_no).'" method="post">
+                        '.csrf_field().'
+                        '.method_field("DELETE").'
+                        <button onclick="return Confirm()" type="submit" class="dropdown-item text-danger"><i class="fa fa-trash"></i> Delete</button>
+                        </form>
+                    </div>
+                </div>';
+                return $btn;
+            })
+            ->rawColumns(['action','customer_info','product_info','amount'])
+            ->make(true);
+
+
+        }
+        return view('inventory.sales.index');
     }
 
     /**
@@ -76,7 +177,26 @@ class SalesController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $chkq = sales_entry::withTrashed()->where('invoice_no',$id)->get();
+        if($chkq)
+        {
+            foreach($chkq as $v)
+            {
+                $total_stock = stock::where('product_id',$v->product_id)->first();
+                // return $total_stock->sales_qty;
+                $updated_quantity = $total_stock->sales_qty - $v->product_quantity;
+                // return $updated_quantity;
+                stock::where('product_id',$v->product_id)->update([
+                    'sales_qty'=> $updated_quantity,
+                ]);
+            }
+        }
+
+        sales_entry::where('invoice_no',$id)->delete();
+        sales_ledger::where('invoice_no',$id)->delete();
+        sales_payment::where('invoice_no',$id)->delete();
+        Toastr::success('Sales Ledger Ledger Delete Successfully', 'Success');
+        return redirect()->back();
     }
 
     public function salesproductcart($id)
@@ -289,9 +409,177 @@ class SalesController extends Controller
 
         $product = sales_entry::where("sales_entries.invoice_no",$data->invoice_no)
         ->join("product_informations",'product_informations.pdt_id','sales_entries.product_id')
-        ->select('sales_entries.*','product_informations.pdt_measurement')
+        ->select('sales_entries.*','product_informations.pdt_measurement','product_informations.pdt_name_en','product_informations.pdt_name_bn')
         ->get();
 
         return view("inventory.sales.sales_invoice",compact('data','product'));
+    }
+
+    public function retrive_sales_ledger($id)
+    {
+        $chkq = sales_entry::withTrashed()->where('invoice_no',$id)->get();
+        if($chkq)
+        {
+            foreach($chkq as $v)
+            {
+                $total_stock = stock::where('product_id',$v->product_id)->first();
+                // return $total_stock->sales_qty;
+                $updated_quantity = $total_stock->sales_qty + $v->product_quantity;
+                // return $updated_quantity;
+                stock::where('product_id',$v->product_id)->update([
+                    'sales_qty'=> $updated_quantity,
+                ]);
+            }
+        }
+
+        sales_entry::where('invoice_no',$id)->restore();
+        sales_ledger::where('invoice_no',$id)->restore();
+        sales_payment::where('invoice_no',$id)->restore();
+        Toastr::success('Sales Ledger Ledger Retrive Successfully', 'Success');
+        return redirect()->back();
+    }
+
+    public function deleteper_salesledger($id)
+    {
+        sales_entry::where('invoice_no',$id)->forceDelete();
+        sales_ledger::where('invoice_no',$id)->forceDelete();
+        sales_payment::where('invoice_no',$id)->forceDelete();
+        Toastr::success('Sales Ledger Ledger Permanently Delete Successfully', 'Success');
+        return redirect()->back();
+    }
+
+    public function sales_return($id)
+    {
+
+        $check = current_sales_return::where('invoice_no',$id)->delete();
+
+        $sales_entry = sales_entry::where('invoice_no',$id)->get();
+
+        if($sales_entry)
+        {
+            foreach($sales_entry as $p)
+            {
+                $qty = $p->product_quantity - $p->return_quantity;
+                current_sales_return::insert([
+                    'invoice_no'              => $p->invoice_no,
+                    'product_id'              => $p->product_id,
+                    'sub_unit_id'             => $p->sub_unit_id,
+                    'product_quantity'        => $qty,
+                    'product_sales_price'     => $p->product_sales_price,
+                    'product_discount_amount' => $p->product_discount_amount,
+                    'admin_id'                => Auth()->user()->id,
+                ]);
+            }
+        }
+
+        $data = sales_ledger::where('invoice_no',$id)->leftjoin('customer_infos','customer_infos.customer_id','sales_ledgers.customer_id')
+                ->select('sales_ledgers.*','customer_infos.customer_name_en','customer_infos.customer_phone')
+                ->first();
+
+        return view('inventory.sales.sales_return',compact('data'));
+    }
+
+
+    public function load_current_salesreturn(Request $request)
+    {
+        // return $request->invoice_no;
+        $products = current_sales_return::where('invoice_no',$request->invoice_no)
+        ->leftjoin('product_informations','product_informations.pdt_id','current_sales_returns.product_id')
+        ->leftjoin('product_measurements','product_measurements.measurement_id','product_informations.pdt_measurement')
+        ->select('current_sales_returns.*','product_informations.pdt_name_en','product_measurements.measurement_unit')
+        ->get();
+        $i = 1;
+
+        return view('inventory.sales.current_sales_return',compact('products','i'));
+    }
+
+    public function delete_current_sales_return($id)
+    {
+        current_sales_return::where('id',$id)->delete();
+    }
+
+    public function current_sales_returnqty_update(Request $request,$id)
+    {
+        current_sales_return::where('id',$id)->update([
+            'product_quantity'=>$request->qty,
+        ]);
+    }
+
+    public function sales_return_submit(Request $request)
+    {
+        // dd($request->all());
+        $data = current_sales_return::where('invoice_no',$request->invoice_no)->get();
+
+        if($data)
+        {
+            foreach($data as $v)
+            {
+                sales_entry::where('invoice_no',$v->invoice_no)->where('product_id',$v->product_id)->update([
+                    'return_quantity' => $v->product_quantity,
+                ]);
+
+                $totalsalesqty = stock::where('product_id',$v->product_id)->sum('sales_qty');
+
+                $grandtotalsales_qty = $totalsalesqty - $v->product_quantity;
+
+                stock::where('product_id',$v->product_id)->update([
+                    'sales_qty'=>$grandtotalsales_qty,
+                ]);
+            }
+        }
+
+        sales_ledger::where('invoice_no',$request->invoice_no)->update(['return_amount'=>$request->totalamount]);
+
+        sales_payment::where('invoice_no',$request->invoice_no)->update([
+            'return_amount'=>$request->totalamount,
+        ]);
+
+        $row = sales_ledger::where('invoice_no',$request->invoice_no)->first();
+
+        $sales_entry = sales_entry::where('invoice_no',$row->invoice_no)->get();
+
+        $sales_payment = sales_payment::where('invoice_no',$row->invoice_no)->sum('payment_amount');
+
+        $sales_returnpayment = sales_payment::where('invoice_no',$row->invoice_no)->sum('return_amount');
+
+        $total = 0;
+        if($sales_entry)
+        {
+            foreach($sales_entry as $p)
+            {
+                $totalcost = $p->product_sales_price  - $p->product_discount_amount;
+                $total = ($total+($p->product_quantity * $totalcost));
+            }
+        }
+
+        $grandtotal = $total - $row->final_discount;
+
+
+        $total_due = ($grandtotal - $sales_payment) - $sales_returnpayment;
+
+        if($total_due > 0)
+        {
+            sales_payment::where('invoice_no',$row->invoice_no)->update([
+                'returnpaid'=>'0',
+            ]);
+
+        }
+        else
+        {
+
+            sales_payment::where('invoice_no',$row->invoice_no)->update([
+                'returnpaid'=>$total_due,
+            ]);
+        }
+
+
+
+
+        current_sales_return::where('invoice_no',$request->invoice_no)->delete();
+
+        Toastr::success('Sales Return Successfully', 'Success');
+        return redirect('/sales');
+
+
     }
 }
